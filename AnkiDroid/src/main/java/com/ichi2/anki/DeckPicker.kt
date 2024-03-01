@@ -2135,7 +2135,7 @@ open class DeckPicker :
      */
     fun deleteDeck(did: DeckId): Job {
         // if user is deleting default deck
-        if (did.toInt() == 1) { defaultDeckVisibility = false }
+        if (did == 1L) { defaultDeckVisibility = false }
         return launchCatchingTask {
             val changes = withProgress(resources.getString(R.string.delete_deck)) {
                 undoableOp {
@@ -2145,7 +2145,7 @@ open class DeckPicker :
             showSnackbar(TR.browsingCardsDeleted(changes.count), Snackbar.LENGTH_SHORT) {
                 setAction(R.string.undo) {
                     undo()
-                    if (did.toInt() == 1) { defaultDeckVisibility = true }
+                    if (did == 1L) { defaultDeckVisibility = true }
                 }
             }
         }
