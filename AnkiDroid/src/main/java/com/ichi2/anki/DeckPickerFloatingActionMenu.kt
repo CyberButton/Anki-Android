@@ -345,7 +345,13 @@ class DeckPickerFloatingActionMenu(
                     CreateDeckDialog.DeckDialogType.DECK,
                     null
                 )
-                createDeckDialog.onNewDeckCreated = { deckPicker.updateDeckList() }
+                createDeckDialog.onNewDeckCreated = {
+                    // show user default deck, if he explicitly created it
+                    if (it.toInt() == 1) {
+                        deckPicker.setDefaultDeckVisibility(true)
+                    }
+                    deckPicker.updateDeckList()
+                }
                 createDeckDialog.showDialog()
             }
         }

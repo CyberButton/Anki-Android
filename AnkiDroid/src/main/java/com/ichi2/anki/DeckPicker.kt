@@ -214,6 +214,9 @@ open class DeckPicker :
     // flag asking user to do a full sync which is used in upgrade path
     private var recommendFullSync = false
 
+    // flag for visibility of the Default deck when it is empty
+    private var defaultDeckVisibility = false
+
     var activeSnackBar: Snackbar? = null
     private val activeSnackbarCallback = object : BaseTransientBottomBar.BaseCallback<Snackbar>() {
         override fun onShown(transientBottomBar: Snackbar?) {
@@ -1165,6 +1168,7 @@ open class DeckPicker :
         exportingDelegate.onSaveInstanceState(savedInstanceState)
         savedInstanceState.putSerializable("mediaUsnOnConflict", mediaUsnOnConflict)
         floatingActionMenu.showFloatingActionButton()
+        savedInstanceState.putBoolean("isDefaultDeckVisible", defaultDeckVisibility)
     }
 
     public override fun onRestoreInstanceState(savedInstanceState: Bundle) {
@@ -1176,6 +1180,7 @@ open class DeckPicker :
             importColpkgListener = DatabaseRestorationListener(this, path)
         }
         mediaUsnOnConflict = savedInstanceState.getSerializableCompat("mediaUsnOnConflict")
+        defaultDeckVisibility = savedInstanceState.getBoolean("isDefaultDeckVisible")
     }
 
     override fun onPause() {
@@ -1975,8 +1980,8 @@ open class DeckPicker :
             return
         }
 
-        // Check if default deck is the only available and there are no cards
-        val isEmpty = tree.children.size == 1 && tree.children[0].did == 1L && collectionIsEmpty
+        // Check if default deck is the only available and there are no cards and if user explicitly created empty default deck
+        val isEmpty = tree.children.size == 1 && tree.children[0].did == 1L && collectionIsEmpty && !defaultDeckVisibility
         if (animationDisabled()) {
             deckPickerContent.visibility = if (isEmpty) View.GONE else View.VISIBLE
             noDecksPlaceholder.visibility = if (isEmpty) View.VISIBLE else View.GONE
@@ -2041,6 +2046,10 @@ open class DeckPicker :
             scrollDecklistToDeck(current)
             focusedDeck = current
         }
+    }
+
+    fun setDefaultDeckVisibility(newVisibility: Boolean) {
+        defaultDeckVisibility = newVisibility
     }
 
     // Callback to show study options for currently selected deck
@@ -2125,6 +2134,8 @@ open class DeckPicker :
      * @param did the deck to delete
      */
     fun deleteDeck(did: DeckId): Job {
+        // if user is deleting default deck
+        if (did.toInt() == 1) { defaultDeckVisibility = false }
         return launchCatchingTask {
             val changes = withProgress(resources.getString(R.string.delete_deck)) {
                 undoableOp {
@@ -2132,7 +2143,10 @@ open class DeckPicker :
                 }
             }
             showSnackbar(TR.browsingCardsDeleted(changes.count), Snackbar.LENGTH_SHORT) {
-                setAction(R.string.undo) { undo() }
+                setAction(R.string.undo) {
+                    undo()
+                    if (did.toInt() == 1) { defaultDeckVisibility = true }
+                }
             }
         }
     }
